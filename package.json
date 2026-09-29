@@ -5,7 +5,7 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
-    "check": "node --check src/main/main.js && node --check src/main/updater.js && node --check src/preload.js && node --check src/renderer/app.js && node test/redact.test.js && node test/suggestions.test.js && node test/guard.test.js && node test/translate.test.js",
+    "check": "node --check src/main/main.js && node --check src/main/updater.js && node --check src/main/winenv.js && node --check src/main/pty.js && node --check src/preload.js && node --check src/renderer/app.js && node test/redact.test.js && node test/suggestions.test.js && node test/guard.test.js && node test/translate.test.js && node test/winenv.test.js",
     "icons": "electron scripts/build-icons.js",
     "dist": "electron-builder --win nsis portable",
     "dist:dir": "electron-builder --win --dir"

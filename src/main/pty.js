@@ -5,6 +5,7 @@ const os = require('os');
 const path = require('path');
 const pty = require('node-pty');
 const store = require('./store');
+const { freshEnv } = require('./winenv');
 
 // Shells read these scripts from disk, so in a packaged build they live in
 // app.asar.unpacked (outside processes can't read inside the asar archive).
@@ -90,9 +91,11 @@ function launchSpec(shell) {
   return { args, extraEnv };
 }
 
-function baseEnv() {
+// Our own environment refreshed from the registry, so each new tab sees
+// variables and PATH entries added since TerminalS started.
+async function baseEnv() {
   const env = {};
-  for (const [k, v] of Object.entries(process.env)) {
+  for (const [k, v] of Object.entries(await freshEnv({ ...process.env }))) {
     if (!HOST_ONLY_ENV.test(k)) env[k] = v;
   }
   env.TERM_PROGRAM = 'TerminalS';
@@ -107,11 +110,11 @@ class PtyManager {
     this.nextId = 1;
   }
 
-  create(shellId, cols, rows) {
+  async create(shellId, cols, rows) {
     const shell = detectShells().find((s) => s.id === shellId);
     if (!shell) throw new Error(`Unknown shell: ${shellId}`);
     const { args, extraEnv } = launchSpec(shell);
-    const env = { ...store.applyEnv(baseEnv(), shell.id), ...extraEnv };
+    const env = { ...store.applyEnv(await baseEnv(), shell.id), ...extraEnv };
     const proc = pty.spawn(shell.file, args, {
       name: 'xterm-256color',
       cols: clampInt(cols, 2, 1000, 120),

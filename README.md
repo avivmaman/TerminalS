@@ -39,6 +39,7 @@
 
 **Terminal**
 - Tabs for PowerShell 7, Windows PowerShell, Command Prompt, Git Bash and WSL (whichever are installed).
+- New tabs read the current environment from the registry, so a tool you just installed (and its `PATH` entry) works in the next tab without restarting TerminalS.
 - Themes (including the **TerminalS** brand theme), font size and default shell in **Settings** (`Ctrl+,`).
 
 **History and suggestions (local, no AI)**
