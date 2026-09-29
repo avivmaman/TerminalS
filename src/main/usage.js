@@ -10,7 +10,7 @@ const KEEP_DAYS = 90;
 
 // USD per million tokens [input, output]. Claude list prices, which also apply
 // to Claude on Microsoft Foundry. Azure OpenAI pricing varies by contract, so
-// it gets no estimate.
+// it gets no estimate. OpenRouter reports the actual cost in each response.
 const PRICES = {
   'claude-opus-5': [5, 25],
   'claude-sonnet-5': [2, 10],
@@ -47,7 +47,7 @@ function emptyDay() {
 }
 
 function priceFor(provider, model) {
-  if (provider === 'azure-openai') return null;
+  if (provider === 'azure-openai' || provider === 'openrouter') return null;
   return PRICES[model] || null;
 }
 
@@ -71,6 +71,7 @@ function record({ type, provider, model, usage, error }) {
   day.outputTokens += output;
   const price = priceFor(provider, model);
   if (price) day.costUsd += (input * price[0] + output * price[1]) / 1e6;
+  else if (usage && typeof usage.cost === 'number' && usage.cost >= 0) day.costUsd += usage.cost;
   day.byType[type] = (day.byType[type] || 0) + 1;
   day.byProvider[provider] = (day.byProvider[provider] || 0) + 1;
 

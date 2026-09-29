@@ -37,6 +37,7 @@ const DEFAULT_SETTINGS = {
     ghostArrows: true,
     'foundry-claude': { resource: '', model: 'claude-opus-5', auth: 'key' },
     'azure-openai': { endpoint: '', deployment: '', apiVersion: '2024-10-21', auth: 'key' },
+    openrouter: { model: 'anthropic/claude-opus-5' },
   },
   tools: {
     // No AI requests of any kind from these folders (or their subfolders).
@@ -115,13 +116,15 @@ function isExcludedFolder(cwd) {
   });
 }
 
-const PROVIDERS = ['anthropic', 'foundry-claude', 'azure-openai'];
+const PROVIDERS = ['anthropic', 'foundry-claude', 'azure-openai', 'openrouter'];
 const HOTKEYS = ['ctrl+space', 'ctrl+shift+space', 'alt+/', 'none'];
 const AUTH_MODES = ['key', 'entra'];
 // AI traffic may only go to Azure-hosted endpoints over TLS.
 const AZURE_HOST_RE = /\.(openai\.azure\.com|services\.ai\.azure\.com|cognitiveservices\.azure\.com|azure\.anthropic\.com)$/i;
 const RESOURCE_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9-]{0,62}[A-Za-z0-9]$/;
 const DEPLOYMENT_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+// OpenRouter model slugs: vendor/model, optionally with a :variant (e.g. :free).
+const OPENROUTER_MODEL_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\/[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const API_VERSION_RE = /^\d{4}-\d{2}-\d{2}(-preview)?$/;
 
 function azureUrl(value, label) {
@@ -218,6 +221,16 @@ function mergeSavedTools(saved) {
   };
 }
 
+function mergeOpenRouter(current, patch) {
+  const next = { ...current };
+  if (typeof patch.model === 'string') {
+    const m = patch.model.trim();
+    if (!OPENROUTER_MODEL_RE.test(m)) throw new Error('OpenRouter model looks like anthropic/claude-opus-5 or openai/gpt-5.');
+    next.model = m;
+  }
+  return next;
+}
+
 function getSettings() {
   if (!settings) {
     const saved = readJson(settingsFile(), {});
@@ -230,6 +243,7 @@ function getSettings() {
         ...ai,
         'foundry-claude': { ...DEFAULT_SETTINGS.ai['foundry-claude'], ...(ai['foundry-claude'] || {}) },
         'azure-openai': { ...DEFAULT_SETTINGS.ai['azure-openai'], ...(ai['azure-openai'] || {}) },
+        openrouter: { ...DEFAULT_SETTINGS.ai.openrouter, ...(ai.openrouter || {}) },
       },
       tools: mergeSavedTools(saved.tools || {}),
     };
@@ -262,6 +276,7 @@ function updateSettings(patch) {
     if (typeof ai.ghostArrows === 'boolean') next.ai.ghostArrows = ai.ghostArrows;
     if (ai['foundry-claude'] && typeof ai['foundry-claude'] === 'object') next.ai['foundry-claude'] = mergeFoundry(current.ai['foundry-claude'], ai['foundry-claude']);
     if (ai['azure-openai'] && typeof ai['azure-openai'] === 'object') next.ai['azure-openai'] = mergeAzureOpenAI(current.ai['azure-openai'], ai['azure-openai']);
+    if (ai.openrouter && typeof ai.openrouter === 'object') next.ai.openrouter = mergeOpenRouter(current.ai.openrouter, ai.openrouter);
   }
   settings = next;
   writeJsonAtomic(settingsFile(), settings);

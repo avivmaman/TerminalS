@@ -1,40 +1,111 @@
-# TerminalS
+<p align="center">
+  <img src="assets/icon.svg" width="96" alt="TerminalS logo">
+</p>
 
-A Windows terminal (Electron + xterm.js + ConPTY) with a searchable command history panel, inline AI command suggestions, and a manager for environment variables and per-shell startup scripts.
+<h1 align="center">TerminalS</h1>
 
-## Run
+<p align="center">
+  A Windows terminal with a searchable command history, inline suggestions and optional AI help.<br>
+  Runs PowerShell, Command Prompt, Git Bash and WSL tabs.
+</p>
 
-```powershell
-npm install
-npm start
-```
+<p align="center">
+  <a href="https://github.com/avivmaman/TerminalS/actions/workflows/build.yml"><img src="https://github.com/avivmaman/TerminalS/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/avivmaman/TerminalS/releases/latest"><img src="https://img.shields.io/github/v/release/avivmaman/TerminalS?include_prereleases&label=download" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6" alt="Platform: Windows">
+</p>
 
-`npm run check` syntax-checks the sources and runs the unit tests (redaction, suggestion parsing, safety guard, shell translation).
+<p align="center">
+  <img src="docs/screenshots/main.png" alt="TerminalS with a PowerShell tab and the history panel open" width="900">
+</p>
 
-`npm run icons` regenerates `assets/icon.ico` (16–256 px) and `assets/icon.png` from `assets/icon.svg`, the mark taken from `terminals-logo.svg`.
+---
+
+## Contents
+
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Install](#install)
+- [AI providers](#ai-providers)
+- [Privacy](#privacy)
+- [Shortcuts](#shortcuts)
+- [How it works](#how-it-works)
+- [Development](#development)
+- [Contributing](#contributing)
 
 ## Features
 
-- **Tabs** for PowerShell 7, Windows PowerShell, Command Prompt, Git Bash and WSL (whichever are installed).
-- **History panel** (`Ctrl+Shift+H`): every command with its folder, time and exit code. Search it, filter to the current folder, click to insert, double-click (or `Ctrl+Enter` in the search box) to run. Your PSReadLine history (and Git Bash `~/.bash_history`, if present) is imported on first launch; cmd.exe keeps no history file, so cmd history starts with what you run in TerminalS. Commands recorded in one shell are suggested in others only when they work everywhere (`npm`, `git`, `docker`, `python`, `cd`, … without shell-specific syntax such as `$env:` or `%VAR%`). "This shell only" filters the panel; entries from another shell carry a small PS / cmd / bash label.
-- **Pinned commands**: click ☆ on any history entry to pin it; the **Pinned** tab lists them (reorder with ↑/↓, unpin with ★). Pins survive clearing history and take priority in suggestions.
-- **Ghost text** (local only): grey inline text from your pins and history appears instantly. While it is shown, `↑`/`↓` step through every matching command (pins first, then this folder, then elsewhere; the status bar shows e.g. 2/13), `Tab` or `→` accepts, `Esc` dismisses. With nothing typed or no suggestion, `↑`/`↓` go through the shell's own history as usual. Both can be turned off in Settings.
-- **AI suggestions on demand**: press **space twice quickly** (default 300 ms window) or **Ctrl+Space** to open a picker at the cursor with pinned/history matches first and 5 AI suggestions (3–10, configurable), each with a short note. `↑↓` select, `Enter`/`Tab` insert, `1`–`9` quick pick, `Ctrl+Enter` insert and run, `Esc` close — or click. Keep typing and trigger again to refine. Start the line with `#` to describe what you want in plain words. Rows marked ⚠ destructive are never run straight from the picker, and "replaces line" rows swap out what you typed. Nothing is sent to the AI while you type.
-- **Environment & startup** (`Ctrl+Shift+E`):
-  - Environment variables: set / prepend / append (e.g. PATH), for all shells or one. Applied to new tabs only, inside the terminal's process; nothing is written to the registry.
-  - Secret variables are encrypted with Windows DPAPI (Electron `safeStorage`) and never shown again. Values whose name or content look like a credential are stored as secrets automatically.
-  - Startup scripts per shell family (PowerShell, cmd, Git Bash), run in every new tab after your normal profile. Scripts that appear to contain credentials are rejected — use a secret variable instead.
-- Themes (including the **TerminalS** brand theme), font size, default shell, AI provider, trigger (double-space window, hotkey: Ctrl+Space / Ctrl+Shift+Space / Alt+/ / none), suggestion count and ghost text in **Settings** (`Ctrl+,`).
+**Terminal**
+- Tabs for PowerShell 7, Windows PowerShell, Command Prompt, Git Bash and WSL (whichever are installed).
+- Themes (including the **TerminalS** brand theme), font size and default shell in **Settings** (`Ctrl+,`).
 
-## AI tools
+**History and suggestions (local, no AI)**
+- **History panel** (`Ctrl+Shift+H`): every command with its folder, time and exit code. Search it, filter to the current folder or shell, click to insert, double-click (or `Ctrl+Enter` in the search box) to run. Your PSReadLine history and Git Bash `~/.bash_history` are imported on first launch. Commands from one shell are suggested in others only when they work everywhere (`npm`, `git`, `docker`, … without shell-specific syntax such as `$env:` or `%VAR%`).
+- **Pinned commands**: click ☆ on any history entry to pin it. Pins survive clearing history and come first in suggestions.
+- **Ghost text**: grey inline completions from your pins and history. While one is shown, `↑`/`↓` step through every match, `Tab` or `→` accepts, `Esc` dismisses.
+- **Safety guard**: pressing Enter on a risky command (recursive deletes, `git reset --hard`, force push, disk formatting, `DROP TABLE`, `kubectl delete`, `terraform destroy`, `curl … | sh`, …) asks first. Also warns about `git push`/`reset`/`rebase` on protected branches (`main`, `master` by default). Checked locally; nothing is sent.
+- **Environment & startup** (`Ctrl+Shift+E`): environment variables (set / prepend / append, for all shells or one) and per-shell startup scripts, applied to new tabs only. Secret values are encrypted with Windows DPAPI and never shown again.
 
-Each can be switched on or off, and configured, in **Settings → Tools** / **Usage**.
+**AI tools (optional, bring your own key)**
+- **Suggestion picker**: press **space twice** or **Ctrl+Space** for pinned/history matches plus 3–10 AI suggestions, each with a short note. Start the line with `#` to describe what you want in plain words. Destructive suggestions are flagged and never run straight from the picker.
+- **Fix last command**: when a command fails, a **✦ Fix** chip appears on the prompt; click it or press **Alt+F**. The last lines of output (redacted) can be included.
+- **Translate between shells**: paste a bash command into PowerShell (or the other way round) and TerminalS offers to translate it; **Alt+T** translates the current line. Common one-liners are translated by built-in rules without AI.
+- **Usage meter**: requests, tokens and estimated cost per day (counts only, never content), with optional daily caps.
+- **AI-excluded folders**: no AI requests of any kind from these folders or their subfolders.
 
-- **Fix last command** — when a command fails, a **✦ Fix** chip appears on the prompt; click it or press **Alt+F** for AI fixes that replace the line. The failed command's last lines of output (40 by default, redacted first) are included; you can turn that off or change the count. Also catches commands written for another shell (e.g. `grep` in PowerShell).
-- **Safety guard** — pressing Enter on a risky command (recursive deletes, `git reset --hard`, force push, disk formatting, `DROP TABLE`, `kubectl delete`, `terraform destroy`, `curl … | sh`, …) opens a confirmation: **Y** runs it, **Esc** leaves it on the line. Also warns about `git push`/`reset`/`rebase` on protected branches (`main, master` by default, globs allowed; the branch is read from `.git/HEAD`). Checked locally — nothing is sent. Each category can be switched off. Running from the history panel or the picker goes through the same check.
-- **Translate between shells** — paste a command written for another shell (e.g. bash `export X=1` into PowerShell) and TerminalS asks whether to translate it; **Enter** shows translations, **Esc** keeps the paste. **Alt+T** translates whatever is on the line. Common one-liners are translated instantly by built-in rules (no AI); the rest go to the AI with the target shell's version (PowerShell 5.1 vs 7 matters). Detection sensitivity is configurable.
-- **Usage meter** — counts AI requests and tokens per day (counts only, never content) with an estimated cost for Claude models. Shown in the status bar and in Settings → Usage (today / 7 / 30 days, by feature). Optional daily request and token caps stop AI requests when reached.
-- **AI-excluded folders** — no AI requests of any kind from these folders or their subfolders (for example customer data or support reproductions).
+Every AI tool can be switched off in **Settings → Tools**.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Ghost text from history](docs/screenshots/ghost-text.png) | ![Safety guard confirmation](docs/screenshots/safety-guard.png) |
+| **Ghost text** from your history and pins | **Safety guard** before a risky command |
+| ![Settings](docs/screenshots/settings.png) | ![Environment and startup scripts](docs/screenshots/environment.png) |
+| **Settings** with the AI provider | **Environment & startup** manager |
+
+Screenshots are generated by the [Screenshots workflow](.github/workflows/screenshots.yml) on a Windows runner (`scripts/screenshots.js`).
+
+## Install
+
+Download the latest build from [Releases](https://github.com/avivmaman/TerminalS/releases/latest):
+
+- `TerminalS Setup <version>.exe`: installer (per-user, no admin needed)
+- `TerminalS-<version>-portable.exe`: single file, no install
+
+Builds for every push are also attached to the [Build workflow](https://github.com/avivmaman/TerminalS/actions/workflows/build.yml) runs as artifacts.
+
+> [!NOTE]
+> The executables are not code-signed yet, so Windows SmartScreen may warn on first launch (**More info → Run anyway**). Machines with application control (AppLocker/WDAC) may block unsigned apps entirely; see [Code signing](#code-signing).
+
+Requires Windows 10 1809 or later (ConPTY).
+
+## AI providers
+
+AI features are optional. Pick a provider in **Settings → AI** and add a key there (stored encrypted with DPAPI) or through an environment variable.
+
+| Provider | Configure | Key |
+|---|---|---|
+| **Claude API** (Anthropic) | Model: `claude-opus-5` (default), `claude-sonnet-5`, `claude-haiku-4-5` (lowest latency) | `ANTHROPIC_API_KEY` |
+| **OpenRouter** | Any [OpenRouter model](https://openrouter.ai/models) slug, e.g. `anthropic/claude-opus-5`, `openai/gpt-5`, `google/gemini-2.5-flash` | `OPENROUTER_API_KEY` |
+| **Claude on Azure AI Foundry** | Resource name or `https://…services.ai.azure.com/anthropic/` URL, model/deployment | `ANTHROPIC_FOUNDRY_API_KEY` (+ `ANTHROPIC_FOUNDRY_BASE_URL`) or Entra ID |
+| **Azure OpenAI** | Endpoint, deployment, API version (default `2024-10-21`) | `AZURE_OPENAI_API_KEY` (+ `AZURE_OPENAI_ENDPOINT`) or Entra ID |
+
+- Azure providers can sign in with an API key or **Entra ID** (`DefaultAzureCredential`: `az login`, Azure PowerShell, managed identity), which uses short-lived tokens instead of long-lived keys.
+- Azure endpoints must be `https://` on an Azure AI domain. A key taken from an environment variable is only ever sent to the endpoint from the matching environment variable.
+- OpenRouter reports the actual cost of each request, so the usage meter shows real spend for it. Claude models show an estimate from list prices; Azure OpenAI shows none.
+- **Test connection** in Settings sends a fixed synthetic prompt (`git st`) with no context.
+
+## Privacy
+
+- Nothing is sent to any AI service while you type. Requests happen only when you open the picker, click Fix or translate.
+- What is sent: the typed prefix, the shell name and, if **Send context** is on, the current folder, its file names and your last 20 commands. Everything goes through [`src/main/redact.js`](src/main/redact.js) first; if the input itself looks like a credential, no request is made.
+- Terminal state is sent as JSON data, separate from the instructions, and replies are validated (single line, no control characters).
+- Commands that look like they contain credentials are never saved to history.
+- Everything is stored locally under `%APPDATA%\TerminalS\`:
+  - `settings.json`, `profiles.json`, `history.json`, `pins.json`, `usage.json` (daily counters only)
+  - `secrets.json`: DPAPI-encrypted secret variables and API keys
+  - `startup-scripts\`: the generated startup script files
 
 ## Shortcuts
 
@@ -50,52 +121,69 @@ Each can be switched on or off, and configured, in **Settings → Tools** / **Us
 | `Alt+F` | Fix last failed command (configurable) |
 | `Alt+T` | Translate the line to this tab's shell (configurable) |
 | `Ctrl+C` (with selection) / `Ctrl+Shift+C` | Copy |
-| `Ctrl+V` / right-click | Paste (right-click copies instead when text is selected; configurable) |
+| `Ctrl+V` / right-click | Paste (right-click copies when text is selected; configurable) |
 | `F12` | DevTools |
 
-## AI suggestions
-
-Pick a provider in Settings:
-
-| Provider | SDK | Configure |
-|---|---|---|
-| Claude API (Anthropic) | `@anthropic-ai/sdk` | Model (`claude-opus-5` default, low effort, server-side refusal fallbacks; `claude-sonnet-5`, `claude-haiku-4-5` for lowest latency). Key: `ANTHROPIC_API_KEY` or Settings. |
-| Claude on Azure AI Foundry | `@anthropic-ai/foundry-sdk` | Resource name or `https://…services.ai.azure.com/anthropic/` URL, model/deployment name. Defaults to `ANTHROPIC_FOUNDRY_BASE_URL` + `ANTHROPIC_FOUNDRY_API_KEY`. |
-| Azure OpenAI (Foundry) | `openai` (`AzureOpenAI`) | Endpoint, deployment, API version (default `2024-10-21`). Defaults to `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY`. |
-
-Azure providers can sign in with an **API key** or **Entra ID** (`@azure/identity` `DefaultAzureCredential`: `az login`, Azure PowerShell, managed identity). Entra ID issues short-lived tokens instead of long-lived static keys.
-
-Safety rails:
-- Endpoints must be `https://` on an Azure AI domain (`*.openai.azure.com`, `*.services.ai.azure.com`, `*.cognitiveservices.azure.com`).
-- A key taken from an environment variable is only ever sent to the endpoint from the matching environment variable. If you type a different endpoint, save a key for it in Settings.
-- Keys pasted in Settings are stored encrypted with DPAPI. For session-only env vars use `$env:NAME = '...'`, not `setx`.
-- **Test connection** in Settings sends a fixed synthetic prompt (`git st`) with no context.
-
-What is sent: the typed prefix, the shell name and — if "Send context" is on — the current folder, its file names, and your last 20 commands. Everything passes through `src/main/redact.js` first; if the typed input itself looks like it contains a credential, no request is made. Terminal state is sent as JSON data, separate from the instructions, and the reply is validated (single line, no control characters, must extend what you typed).
+In the picker: `↑↓` select, `Enter`/`Tab` insert, `1`–`9` quick pick, `Ctrl+Enter` insert and run, `Esc` close.
 
 ## How it works
 
-Each shell is started with a small integration script (`src/main/shell-integration/`) that wraps the prompt to emit OSC 633 markers — the same protocol VS Code uses — for prompt start, input start, exit code and current directory. The terminal reads the command line straight from the screen buffer between the input-start marker and the cursor, so suggestions stay correct after tab completion, history recall and in-line edits. WSL has no integration yet and falls back to a heuristic.
+TerminalS is an [Electron](https://www.electronjs.org/) app using [xterm.js](https://xtermjs.org/) for rendering and [node-pty](https://github.com/microsoft/node-pty) (ConPTY) for the shells.
 
-The PowerShell integration is dot-sourced via `-Command`, so a machine-wide execution policy that blocks scripts will disable integration (the shell still works, just without folder tracking, exit codes and reliable suggestions).
+Each shell is started with a small integration script ([`src/main/shell-integration/`](src/main/shell-integration)) that wraps the prompt to emit OSC 633 markers, the same protocol VS Code uses, for prompt start, input start, exit code and current directory. The terminal reads the command line straight from the screen buffer between the input-start marker and the cursor, so suggestions stay correct after tab completion, history recall and in-line edits. WSL has no integration yet and falls back to a heuristic.
 
-## Data
+The PowerShell integration is dot-sourced via `-Command`, so a machine-wide execution policy that blocks scripts disables integration (the shell still works, without folder tracking, exit codes and reliable suggestions).
 
-Stored under `%APPDATA%\TerminalS\`:
-
-- `settings.json`, `profiles.json` (non-secret variables, scripts), `history.json`, `pins.json`, `usage.json` (daily counters only)
-- `secrets.json` — DPAPI-encrypted secret variables and API keys
-- `startup-scripts\` — the generated startup script files
-
-Commands that look like they contain credentials are never saved to history.
-
-## Build an .exe
-
-```powershell
-npm run dist       # dist\TerminalS Setup <version>.exe (installer) + dist\TerminalS-<version>-portable.exe
-npm run dist:dir   # dist\win-unpacked\TerminalS.exe only (no installer), fastest
+```
+src/
+  main/         Electron main process: shells (pty.js), AI (ai.js), history, settings, safety guard, translation
+  renderer/     UI: tabs, history panel, picker, dialogs
+  preload.js    The IPC bridge between the two
+test/           Unit tests (plain Node, no framework)
+scripts/        Icon generation and README screenshots
 ```
 
-Built with electron-builder (config under `"build"` in `package.json`). node-pty's prebuilt Windows binaries are used as-is (`npmRebuild: false`, no Visual Studio needed). The shell-integration scripts and node-pty are unpacked from the asar archive because the shells and ConPTY must read them from disk.
+## Development
 
-**Code signing.** The output is unsigned. On machines with application control (AppLocker/WDAC/endpoint protection), unsigned executables are blocked from running, and the installer build itself fails with `spawn EPERM` because electron-builder runs the generated uninstaller while building. Sign with your organisation's code-signing certificate, e.g. by providing it to electron-builder through the `CSC_LINK` / `CSC_KEY_PASSWORD` environment variables from your secret store (never commit the certificate or password), or via Azure Trusted Signing (`build.win.azureSignOptions`). Otherwise ask IT to allowlist the build.
+Requires Windows, [Node.js](https://nodejs.org/) 22+ and Git.
+
+```powershell
+git clone https://github.com/avivmaman/TerminalS.git
+cd TerminalS
+npm install
+npm start
+```
+
+| Command | What it does |
+|---|---|
+| `npm start` | Run the app |
+| `npm run check` | Syntax-check the sources and run the unit tests (redaction, suggestion parsing, safety guard, shell translation) |
+| `npm run dist` | Build `dist\TerminalS Setup <version>.exe` and `dist\TerminalS-<version>-portable.exe` |
+| `npm run dist:dir` | Build `dist\win-unpacked\TerminalS.exe` only (fastest) |
+| `npm run icons` | Regenerate `assets/icon.ico` and `assets/icon.png` from `assets/icon.svg` |
+
+Builds use electron-builder (config under `"build"` in `package.json`). node-pty's prebuilt Windows binaries are used as-is, so Visual Studio isn't needed. The shell-integration scripts and node-pty are unpacked from the asar archive because the shells and ConPTY must read them from disk.
+
+### Releases
+
+The [Build workflow](.github/workflows/build.yml) runs `npm run check` and builds both executables on every push and pull request. Pushing a tag starting with `v` also publishes a GitHub release with the executables attached:
+
+```powershell
+npm version patch   # bumps package.json and creates the tag
+git push --follow-tags
+```
+
+### Code signing
+
+The executables are unsigned. To sign them, give electron-builder a certificate through the `CSC_LINK` / `CSC_KEY_PASSWORD` environment variables (in CI, from repository secrets; never commit them), or use Azure Trusted Signing (`build.win.azureSignOptions`). Unsigned builds on machines with application control can also fail with `spawn EPERM`, because electron-builder runs the generated uninstaller while building.
+
+## Contributing
+
+Issues and pull requests are welcome.
+
+1. Fork the repository and create a branch.
+2. Make your change; keep it focused and match the surrounding code style.
+3. Run `npm run check` and try the change in the app with `npm start`.
+4. Open a pull request describing what changed and why.
+
+For bugs, include your Windows version, the shell, and steps to reproduce. Please don't include API keys, command output with secrets, or the contents of `%APPDATA%\TerminalS\secrets.json`.

@@ -121,6 +121,7 @@
             <option value="anthropic">Claude API (Anthropic)</option>
             <option value="foundry-claude">Claude on Azure AI Foundry</option>
             <option value="azure-openai">Azure OpenAI (Foundry)</option>
+            <option value="openrouter">OpenRouter</option>
           </select>
         </div>
         <div class="grid provider-grid" data-provider="anthropic">
@@ -150,6 +151,10 @@
             <option value="key">API key</option>
             <option value="entra">Entra ID (az login)</option>
           </select>
+        </div>
+        <div class="grid provider-grid" data-provider="openrouter">
+          <label for="set-or-model">Model</label>
+          <input id="set-or-model" data-field="model" placeholder="anthropic/claude-opus-5" spellcheck="false">
         </div>
         <div class="grid" id="key-grid">
           <label for="set-key">API key</label>
@@ -256,7 +261,7 @@
           <tbody></tbody>
         </table>
         <p id="usage-bytype" class="hint"></p>
-        <div class="row"><span class="hint">Cost is an estimate from Claude list prices; Azure OpenAI has no estimate.</span><span class="spacer"></span><button id="usage-reset">Reset counters</button></div>
+        <div class="row"><span class="hint">Cost is an estimate from Claude list prices, or OpenRouter's reported cost; Azure OpenAI has no estimate.</span><span class="spacer"></span><button id="usage-reset">Reset counters</button></div>
       </section>
     </div>
     <div class="dialog-footer about">
