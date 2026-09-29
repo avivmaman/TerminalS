@@ -233,6 +233,8 @@ input.wide-num { width: 130px; }
 .usage-table th, .usage-table td { padding: 5px 8px; text-align: right; border-top: 1px solid var(--surface); }
 .usage-table thead th { color: var(--muted); font-weight: 500; font-size: 12px; border-top: none; }
 .usage-table tbody th { text-align: left; font-weight: 500; }
+.pill.update { border: none; font-size: 12px; color: var(--chrome); background: var(--accent); cursor: pointer; }
+.beta-badge { align-self: center; margin-right: 6px; padding: 0 6px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--chrome); background: var(--accent); flex: none; }
 .pill.usage { color: var(--muted); font-variant-numeric: tabular-nums; }
 
 .fix-chip {

@@ -1651,6 +1651,7 @@ function openSettings() {
   $('set-ghost').checked = s.ai.ghost;
   $('set-ghost-arrows').checked = s.ai.ghostArrows;
   $('set-rclick').checked = s.rightClick;
+  $('set-update-auto').checked = s.updates.auto;
   $('set-model').replaceChildren(...s.models.map((m) => h('option', { value: m, text: m + (m === 'claude-opus-5' ? ' (default)' : m === 'claude-haiku-4-5' ? ' (fastest)' : '') })));
   $('set-model').value = s.ai.model;
   $('set-key').value = '';
@@ -2010,6 +2011,52 @@ function onGlobalKey(e) {
   }
 }
 
+// --------------------------------------------------------------- updates
+
+function updateText(u) {
+  switch (u.status) {
+    case 'disabled': return u.reason || 'Updates are not available in this build.';
+    case 'checking': return 'Checking for updates…';
+    case 'none': return `You're up to date (v${state.settings.version}).`;
+    case 'available': return `Version ${u.version} is available. The portable build can't update itself; download it from the release page.`;
+    case 'downloading': return `Downloading version ${u.version}… ${u.percent || 0}%`;
+    case 'ready': return `Version ${u.version} is ready. Restart to install it.`;
+    case 'error': return u.error || 'Update check failed.';
+    default: return '';
+  }
+}
+
+function renderUpdate(u) {
+  state.update = u;
+  $('update-status').textContent = updateText(u);
+  $('update-check').disabled = ['disabled', 'checking', 'downloading', 'ready'].includes(u.status);
+  $('update-install').hidden = u.status !== 'ready';
+  const pill = $('status-update');
+  pill.hidden = !(u.status === 'ready' || u.status === 'available');
+  pill.textContent = u.status === 'ready' ? `Restart to update to v${u.version}` : `Update v${u.version} available`;
+  pill.title = u.status === 'ready' ? 'Installs the update and restarts TerminalS' : 'Opens the release page';
+}
+
+function onUpdateAction() {
+  const u = state.update || {};
+  if (u.status === 'ready') api.updates.install();
+  else if (u.status === 'available' && u.url) api.openExternal(u.url);
+}
+
+function wireUpdates() {
+  // Pre-release versions (e.g. 0.2.0-beta.1) are marked as beta in the UI.
+  const beta = /-(alpha|beta|rc)/i.test(state.settings.version || '');
+  $('beta-badge').hidden = !beta;
+  document.title = beta ? 'TerminalS Beta' : 'TerminalS';
+
+  $('set-update-auto').addEventListener('change', (e) => saveSettings({ updates: { auto: e.target.checked } }));
+  $('update-check').addEventListener('click', () => api.updates.check());
+  $('update-install').addEventListener('click', () => api.updates.install());
+  $('status-update').addEventListener('click', onUpdateAction);
+  api.updates.onState(renderUpdate);
+  api.updates.state().then(renderUpdate);
+}
+
 // ------------------------------------------------------------------ boot
 
 async function boot() {
@@ -2047,6 +2094,7 @@ async function boot() {
   wireHistoryPanel();
   wireSettings();
   wireProfiles();
+  wireUpdates();
   renderHistoryNow();
 
   if (state.shells.length === 0) {

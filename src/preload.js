@@ -10,6 +10,12 @@ function subscribe(channel, cb) {
 
 contextBridge.exposeInMainWorld('terminals', {
   shells: () => ipcRenderer.invoke('shells:list'),
+  updates: {
+    state: () => ipcRenderer.invoke('updates:state'),
+    check: () => ipcRenderer.invoke('updates:check'),
+    install: () => ipcRenderer.invoke('updates:install'),
+    onState: (cb) => subscribe('updates:state', cb),
+  },
   pty: {
     create: (shellId, cols, rows) => ipcRenderer.invoke('pty:create', shellId, cols, rows),
     write: (id, data) => ipcRenderer.send('pty:write', id, data),
