@@ -85,8 +85,6 @@ async function main() {
     cwd: ROOT,
     env: {
       ...process.env,
-      // New tabs open in the home folder, so this starts them in the demo project.
-      USERPROFILE: DEMO,
       // Without a real key, a placeholder shows the configured state (no request is made).
       OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || 'sk-or-v1-screenshot-placeholder-0000000000',
     },
@@ -94,6 +92,21 @@ async function main() {
   const page = await app.firstWindow();
   await page.waitForSelector('#terminals .xterm', { timeout: 30000 });
   await sleep(4000); // shell start-up and profile
+
+  // New tabs open in the home folder (os.homedir() reads USERPROFILE on each
+  // call). Changing it at launch crashes Electron, so change it now, open a
+  // tab in the demo project and close the first one.
+  await page.click('#terminals');
+  await app.evaluate((_electron, dir) => { process.env.USERPROFILE = dir; }, DEMO);
+  await page.keyboard.press('Control+Shift+T');
+  await sleep(4000);
+  await page.keyboard.press('Control+Shift+Tab');
+  await page.keyboard.press('Control+Shift+W');
+  await sleep(1000);
+  // The new shell creates AppData in its home folder; keep it out of Get-ChildItem.
+  try {
+    execFileSync('attrib', ['+h', path.join(DEMO, 'AppData')], { stdio: 'ignore' });
+  } catch {}
 
   const shot = async (name) => {
     await sleep(600);

@@ -10,7 +10,7 @@
     "dist": "electron-builder --win nsis portable",
     "dist:dir": "electron-builder --win --dir"
   },
-  "license": "UNLICENSED",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/foundry-sdk": "^0.4.9",
@@ -28,7 +28,7 @@
   },
   "productName": "TerminalS",
   "private": true,
-  "author": "TerminalS",
+  "author": "Aviv Maman",
   "build": {
     "appId": "com.terminals.app",
     "productName": "TerminalS",
@@ -54,6 +54,7 @@
       ]
     },
     "nsis": {
+      "artifactName": "TerminalS-Setup-${version}.exe",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
