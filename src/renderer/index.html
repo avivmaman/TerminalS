@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>TerminalS</title>
+  <link rel="stylesheet" href="../../node_modules/@xterm/xterm/css/xterm.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="terminals">
+  <header id="titlebar">
+    <img class="app-logo" src="../../assets/icon.svg" alt="TerminalS" title="TerminalS">
+    <div id="tabs"></div>
+    <button id="new-tab" class="tb-btn" title="New tab (Ctrl+Shift+T)">+</button>
+    <button id="shell-menu-btn" class="tb-btn" title="Choose shell">&#9662;</button>
+    <div class="drag"></div>
+  </header>
+  <div id="shell-menu" class="menu" hidden></div>
+
+  <main id="main">
+    <section id="terminals"></section>
+    <aside id="history-panel">
+      <div class="panel-header">
+        <span class="panel-title">History</span>
+        <button id="history-close" class="icon-btn" title="Hide (Ctrl+Shift+H)">&times;</button>
+      </div>
+      <nav class="seg panel-seg">
+        <button data-view="recent" class="active">Recent</button>
+        <button data-view="pinned">Pinned <span id="pin-count" class="count"></span></button>
+      </nav>
+      <div class="panel-tools">
+        <input id="history-search" type="search" placeholder="Search history&hellip;" autocomplete="off" spellcheck="false">
+        <div class="row filters" id="history-here-label">
+          <label class="check"><input type="checkbox" id="history-here"> Current folder only</label>
+          <label class="check"><input type="checkbox" id="history-shell"> This shell only</label>
+        </div>
+      </div>
+      <ul id="history-list"></ul>
+      <div class="panel-footer">
+        <span id="history-count"></span>
+        <button id="history-clear" class="link-btn">Clear all</button>
+      </div>
+    </aside>
+  </main>
+
+  <footer id="statusbar">
+    <span id="status-shell"></span>
+    <span id="status-cwd"></span>
+    <span class="spacer"></span>
+    <span id="status-hint"></span>
+    <span id="status-usage" class="pill usage" hidden></span>
+    <span id="status-ai" class="pill"></span>
+    <button id="btn-history" class="sb-btn" title="Ctrl+Shift+H">History</button>
+    <button id="btn-profiles" class="sb-btn" title="Ctrl+Shift+E">Environment</button>
+    <button id="btn-settings" class="sb-btn" title="Ctrl+,">Settings</button>
+  </footer>
+
+  <dialog id="settings-dialog">
+    <div class="dialog-header">
+      <h2>Settings</h2>
+      <button class="icon-btn" data-close>&times;</button>
+    </div>
+    <nav class="seg settings-seg">
+      <button data-tab="general" class="active">General</button>
+      <button data-tab="ai">AI</button>
+      <button data-tab="tools">Tools</button>
+      <button data-tab="usage">Usage</button>
+    </nav>
+    <div id="settings-msg" class="msg" hidden></div>
+    <div class="dialog-body">
+      <section data-tab="general">
+        <h3>Appearance</h3>
+        <div class="grid">
+          <label for="set-theme">Theme</label>
+          <select id="set-theme">
+            <option value="terminals">TerminalS (brand)</option>
+            <option value="mocha">Mocha (dark)</option>
+            <option value="midnight">Midnight (dark)</option>
+            <option value="light">Latte (light)</option>
+          </select>
+          <label for="set-font">Font size</label>
+          <input id="set-font" type="number" min="8" max="32" step="1">
+          <label for="set-shell">Default shell</label>
+          <select id="set-shell"></select>
+          <label for="set-rclick">Right-click</label>
+          <label class="check"><input id="set-rclick" type="checkbox"> Copy the selection, or paste when nothing is selected</label>
+        </div>
+      </section>
+
+      <section data-tab="ai" hidden>
+        <h3>AI suggestions</h3>
+        <div class="grid">
+          <label for="set-ai">Enabled</label>
+          <input id="set-ai" type="checkbox">
+          <label for="set-ctx">Send context</label>
+          <label class="check"><input id="set-ctx" type="checkbox"> Folder, file names and recent commands (secrets are redacted first)</label>
+          <label for="set-dbl">Trigger</label>
+          <div class="row inline">
+            <label class="check"><input id="set-dbl" type="checkbox"> Double-space within</label>
+            <input id="set-dbl-ms" type="number" min="150" max="800" step="50" class="narrow">
+            <span class="hint">ms</span>
+          </div>
+          <label for="set-hotkey">Hotkey</label>
+          <select id="set-hotkey">
+            <option value="ctrl+space">Ctrl+Space</option>
+            <option value="ctrl+shift+space">Ctrl+Shift+Space</option>
+            <option value="alt+/">Alt+/</option>
+            <option value="none">None</option>
+          </select>
+          <label for="set-count">Suggestions</label>
+          <div class="row inline">
+            <input id="set-count" type="number" min="3" max="10" step="1" class="narrow">
+            <span class="hint">per request (3–10)</span>
+          </div>
+          <label for="set-ghost">Ghost text</label>
+          <label class="check"><input id="set-ghost" type="checkbox"> Instant inline suggestions from pins and history (local only)</label>
+          <label for="set-ghost-arrows">Ghost arrows</label>
+          <label class="check"><input id="set-ghost-arrows" type="checkbox"> ↑/↓ step through every matching command while a suggestion is shown</label>
+          <label for="set-provider">Provider</label>
+          <select id="set-provider">
+            <option value="anthropic">Claude API (Anthropic)</option>
+            <option value="foundry-claude">Claude on Azure AI Foundry</option>
+            <option value="azure-openai">Azure OpenAI (Foundry)</option>
+          </select>
+        </div>
+        <div class="grid provider-grid" data-provider="anthropic">
+          <label for="set-model">Model</label>
+          <select id="set-model"></select>
+        </div>
+        <div class="grid provider-grid" data-provider="foundry-claude">
+          <label for="set-fc-resource">Resource</label>
+          <input id="set-fc-resource" data-field="resource" placeholder="my-resource   or   https://my-resource.services.ai.azure.com/anthropic/" spellcheck="false">
+          <label for="set-fc-model">Model / deployment</label>
+          <input id="set-fc-model" data-field="model" placeholder="claude-opus-5" spellcheck="false">
+          <label for="set-fc-auth">Sign-in</label>
+          <select id="set-fc-auth" data-field="auth">
+            <option value="key">API key</option>
+            <option value="entra">Entra ID (az login)</option>
+          </select>
+        </div>
+        <div class="grid provider-grid" data-provider="azure-openai">
+          <label for="set-ao-endpoint">Endpoint</label>
+          <input id="set-ao-endpoint" data-field="endpoint" placeholder="https://my-resource.openai.azure.com/" spellcheck="false">
+          <label for="set-ao-deployment">Deployment</label>
+          <input id="set-ao-deployment" data-field="deployment" placeholder="gpt-4.1-mini" spellcheck="false">
+          <label for="set-ao-version">API version</label>
+          <input id="set-ao-version" data-field="apiVersion" placeholder="2024-10-21" spellcheck="false">
+          <label for="set-ao-auth">Sign-in</label>
+          <select id="set-ao-auth" data-field="auth">
+            <option value="key">API key</option>
+            <option value="entra">Entra ID (az login)</option>
+          </select>
+        </div>
+        <div class="grid" id="key-grid">
+          <label for="set-key">API key</label>
+          <div class="key-row">
+            <input id="set-key" type="password" autocomplete="off" spellcheck="false">
+            <button id="set-key-save" class="primary">Save</button>
+            <button id="set-key-clear">Remove</button>
+          </div>
+          <span></span>
+          <span id="set-key-status" class="hint"></span>
+        </div>
+        <div class="grid">
+          <span></span>
+          <div class="row test-row">
+            <button id="set-test">Test connection</button>
+            <span id="set-test-result" class="hint"></span>
+          </div>
+        </div>
+        <p class="hint">The AI is only asked when you trigger it — nothing is sent while you type. Start a line with <code>#</code> to describe what you want in plain words. Nothing runs until you pick a suggestion and press Enter; destructive suggestions are never run straight from the list. Commands that look like they contain credentials are never sent or saved.</p>
+      </section>
+
+      <section data-tab="tools" hidden>
+        <h3>Fix last command</h3>
+        <div class="grid" data-tool="fix">
+          <label for="set-fix-on">Enabled</label>
+          <label class="check"><input id="set-fix-on" type="checkbox" data-key="enabled"> Offer AI fixes when a command fails</label>
+          <label for="set-fix-chip">Fix button</label>
+          <label class="check"><input id="set-fix-chip" type="checkbox" data-key="showChip"> Show “✦ Fix” on the prompt after a failure</label>
+          <label for="set-fix-hotkey">Hotkey</label>
+          <select id="set-fix-hotkey" data-key="hotkey">
+            <option value="alt+f">Alt+F</option>
+            <option value="ctrl+alt+f">Ctrl+Alt+F</option>
+            <option value="none">None</option>
+          </select>
+          <label for="set-fix-output">Send output</label>
+          <div class="row inline">
+            <label class="check"><input id="set-fix-output" type="checkbox" data-key="sendOutput"> Last</label>
+            <input id="set-fix-lines" type="number" min="5" max="200" step="5" class="narrow" data-key="outputLines" data-int>
+            <span class="hint">lines of the failed command's output (redacted first)</span>
+          </div>
+        </div>
+
+        <h3>Safety guard</h3>
+        <div class="grid" data-tool="guard">
+          <label for="set-guard-on">Enabled</label>
+          <label class="check"><input id="set-guard-on" type="checkbox" data-key="enabled"> Ask before running risky commands (checked locally, nothing is sent)</label>
+          <label>Check for</label>
+          <div id="set-guard-cats" class="check-grid"></div>
+          <label for="set-guard-branches">Protected branches</label>
+          <input id="set-guard-branches" data-key="protectedBranches" data-list placeholder="main, master, release/*" spellcheck="false">
+        </div>
+
+        <h3>Translate between shells</h3>
+        <div class="grid" data-tool="translate">
+          <label for="set-tr-on">Enabled</label>
+          <label class="check"><input id="set-tr-on" type="checkbox" data-key="enabled"> Translate commands to the current tab's shell</label>
+          <label for="set-tr-paste">On paste</label>
+          <label class="check"><input id="set-tr-paste" type="checkbox" data-key="promptOnPaste"> Ask when pasted text looks like another shell</label>
+          <label for="set-tr-sens">Detection</label>
+          <select id="set-tr-sens" data-key="sensitivity">
+            <option value="low">Only when clearly another shell</option>
+            <option value="medium">Balanced</option>
+            <option value="high">Ask more often</option>
+          </select>
+          <label for="set-tr-hotkey">Hotkey</label>
+          <select id="set-tr-hotkey" data-key="hotkey">
+            <option value="alt+t">Alt+T</option>
+            <option value="ctrl+alt+t">Ctrl+Alt+T</option>
+            <option value="none">None</option>
+          </select>
+          <label for="set-tr-ai">Use AI</label>
+          <label class="check"><input id="set-tr-ai" type="checkbox" data-key="useAi"> Ask the AI when the built-in rules can't translate it</label>
+        </div>
+
+        <h3>AI-excluded folders</h3>
+        <div class="grid">
+          <label for="set-excluded">Folders</label>
+          <textarea id="set-excluded" rows="3" spellcheck="false" placeholder="D:\Customers&#10;C:\Support\Tickets"></textarea>
+          <span></span>
+          <span class="hint">One folder per line. No AI requests of any kind (suggestions, fixes, translations) are made from these folders or their subfolders.</span>
+        </div>
+      </section>
+
+      <section data-tab="usage" hidden>
+        <h3>Usage meter</h3>
+        <div class="grid" data-tool="usage">
+          <label for="set-usage-on">Enabled</label>
+          <label class="check"><input id="set-usage-on" type="checkbox" data-key="enabled"> Count AI requests and tokens (counts only, stored locally)</label>
+          <label for="set-usage-status">Status bar</label>
+          <label class="check"><input id="set-usage-status" type="checkbox" data-key="showInStatus"> Show today's usage next to the AI status</label>
+          <label for="set-usage-req">Daily request cap</label>
+          <div class="row inline">
+            <input id="set-usage-req" type="number" min="0" max="100000" step="10" class="narrow" data-key="dailyRequests" data-int>
+            <span class="hint">0 = no cap</span>
+          </div>
+          <label for="set-usage-tok">Daily token cap</label>
+          <div class="row inline">
+            <input id="set-usage-tok" type="number" min="0" max="1000000000" step="10000" class="wide-num" data-key="dailyTokens" data-int>
+            <span class="hint">0 = no cap</span>
+          </div>
+        </div>
+        <table id="usage-table" class="usage-table">
+          <thead><tr><th></th><th>Requests</th><th>Input tokens</th><th>Output tokens</th><th>Est. cost</th><th>Errors</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="usage-bytype" class="hint"></p>
+        <div class="row"><span class="hint">Cost is an estimate from Claude list prices; Azure OpenAI has no estimate.</span><span class="spacer"></span><button id="usage-reset">Reset counters</button></div>
+      </section>
+    </div>
+    <div class="dialog-footer about">
+      <img src="../../assets/icon.svg" alt="" class="about-logo">
+      <span class="wordmark">Terminal<span>S</span></span>
+      <span id="about-version" class="hint"></span>
+    </div>
+  </dialog>
+
+  <dialog id="guard-dialog" class="guard-dialog">
+    <div class="dialog-header">
+      <h2>⚠ Run this command?</h2>
+    </div>
+    <div class="dialog-body">
+      <pre id="guard-command" class="guard-command"></pre>
+      <ul id="guard-reasons" class="guard-reasons"></ul>
+      <p class="hint">Checked locally by TerminalS. You can change what's checked in Settings → Tools.</p>
+    </div>
+    <div class="dialog-footer">
+      <span class="hint">Y to run · Esc to cancel</span>
+      <span class="spacer"></span>
+      <button id="guard-cancel" autofocus>Cancel</button>
+      <button id="guard-run" class="danger">Run anyway</button>
+    </div>
+  </dialog>
+
+  <dialog id="profiles-dialog">
+    <div class="dialog-header">
+      <h2>Environment &amp; startup</h2>
+      <button class="icon-btn" data-close>&times;</button>
+    </div>
+    <nav class="seg">
+      <button data-pane="env" class="active">Environment variables</button>
+      <button data-pane="scripts">Startup scripts</button>
+    </nav>
+    <div id="profiles-msg" class="msg" hidden></div>
+    <div class="dialog-body">
+      <section data-pane="env">
+        <p class="hint">Added to the environment of new tabs only: they exist just inside the terminal's process and are never written to the registry (no <code>setx</code>). Secret values are encrypted with Windows DPAPI and can't be viewed again.</p>
+        <table id="env-table">
+          <thead><tr><th title="Enabled"></th><th>Name</th><th>Value</th><th>Mode</th><th>Applies to</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="env-empty" class="empty">No variables yet.</p>
+        <div id="env-form" class="env-form" hidden>
+          <input id="env-name" placeholder="NAME" autocomplete="off" spellcheck="false">
+          <input id="env-value" placeholder="value" autocomplete="off" spellcheck="false">
+          <select id="env-mode">
+            <option value="set">Set</option>
+            <option value="prepend">Prepend (;)</option>
+            <option value="append">Append (;)</option>
+          </select>
+          <select id="env-scope"></select>
+          <label class="check"><input type="checkbox" id="env-secret"> Secret</label>
+          <button id="env-save" class="primary">Save</button>
+          <button id="env-cancel">Cancel</button>
+        </div>
+        <button id="env-add">+ Add variable</button>
+      </section>
+      <section data-pane="scripts" hidden>
+        <div class="row">
+          <label for="script-kind">Shell</label>
+          <select id="script-kind">
+            <option value="powershell">PowerShell (5.1 and 7)</option>
+            <option value="cmd">Command Prompt</option>
+            <option value="bash">Git Bash</option>
+          </select>
+          <span id="script-dirty" class="hint"></span>
+        </div>
+        <textarea id="script-text" spellcheck="false" placeholder="# Runs at the start of every new tab of this shell"></textarea>
+        <p class="hint">Runs in every new tab of this shell, after your normal profile. It's stored as a plain file, so keep credentials out of it and add them as secret environment variables instead.</p>
+        <div class="row"><span class="spacer"></span><button id="script-save" class="primary">Save script</button></div>
+      </section>
+    </div>
+    <div class="dialog-footer">
+      <span class="hint">Changes apply to new tabs.</span>
+      <span class="spacer"></span>
+      <button id="profiles-newtab">Open a new tab</button>
+    </div>
+  </dialog>
+
+  <script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="../../node_modules/@xterm/addon-web-links/lib/addon-web-links.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

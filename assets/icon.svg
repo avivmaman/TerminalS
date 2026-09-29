@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- TerminalS mark, extracted from terminals-logo.svg -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1A2150"/>
+      <stop offset="1" stop-color="#2E3FA8"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#tile)"/>
+  <rect x="72" y="70" width="92" height="22" rx="11" fill="#8FA2FF" opacity="0.55"/>
+  <rect x="176" y="70" width="64" height="22" rx="11" fill="#8FA2FF" opacity="0.28"/>
+  <polyline points="92,196 160,256 92,316" fill="none" stroke="#8FA2FF" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 410 176 H 282 Q 236 176 236 222 V 226 Q 236 262 282 262 H 364 Q 410 262 410 308 V 312 Q 410 348 364 348 H 226" fill="none" stroke="#EEF1FA" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="206" y="392" width="224" height="26" rx="6" fill="#FFB547"/>
+  <path d="M 318 72 Q 322 102 350 106 Q 322 110 318 140 Q 314 110 286 106 Q 314 102 318 72 Z" fill="#FFB547"/>
+</svg>
