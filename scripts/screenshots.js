@@ -103,6 +103,10 @@ async function main() {
   await page.keyboard.press('Control+Shift+Tab');
   await page.keyboard.press('Control+Shift+W');
   await sleep(1000);
+  // The new shell creates AppData in its home folder; keep it out of Get-ChildItem.
+  try {
+    execFileSync('attrib', ['+h', path.join(DEMO, 'AppData')], { stdio: 'ignore' });
+  } catch {}
 
   const shot = async (name) => {
     await sleep(600);
