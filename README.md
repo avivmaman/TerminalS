@@ -13,6 +13,7 @@
   <a href="https://github.com/avivmaman/TerminalS/actions/workflows/build.yml"><img src="https://github.com/avivmaman/TerminalS/actions/workflows/build.yml/badge.svg" alt="Build"></a>
   <a href="https://github.com/avivmaman/TerminalS/releases/latest"><img src="https://img.shields.io/github/v/release/avivmaman/TerminalS?include_prereleases&label=download" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6" alt="Platform: Windows">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue" alt="License: PolyForm Noncommercial 1.0.0"></a>
 </p>
 
 <p align="center">
@@ -32,6 +33,7 @@
 - [How it works](#how-it-works)
 - [Development](#development)
 - [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
@@ -192,3 +194,16 @@ Issues and pull requests are welcome.
 4. Open a pull request describing what changed and why.
 
 For bugs, include your Windows version, the shell, and steps to reproduce. Please don't include API keys, command output with secrets, or the contents of `%APPDATA%\TerminalS\secrets.json`.
+
+By contributing, you agree that your contribution is licensed under the same terms as the project.
+
+## License
+
+TerminalS is free for noncommercial use under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+
+- **Allowed:** personal use, study, research, hobby projects, and use by charities, schools, public research organisations and government institutions. You may modify the code and share it (including modified versions) for these purposes, keeping the license and the copyright notice.
+- **Not allowed:** any commercial use, such as use by or inside a business, or selling, bundling or offering it as part of a paid product or service.
+
+For commercial use, [open an issue](https://github.com/avivmaman/TerminalS/issues) to ask about a commercial license.
+
+This is a source-available license, not an OSI-approved open-source license.
