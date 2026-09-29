@@ -137,6 +137,7 @@ async function main() {
   await page.keyboard.press('Escape');
 
   await app.close();
+  console.log(`Screenshots written to ${OUT}`);
 }
 
 main().catch((err) => {
