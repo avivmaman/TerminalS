@@ -13,6 +13,8 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -24,6 +26,21 @@ jobs:
       - run: npm ci
 
       - run: npm run check
+
+      # On main, build as the next unreleased version (0.2.0-beta.1 released ->
+      # 0.2.0-beta.2), so every merge ships as an update the app can install.
+      - name: Pick the release version
+        id: version
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          taken=$( (gh release list --limit 1000 --json tagName --jq '.[].tagName'; git ls-remote --tags origin | sed 's#.*refs/tags/##; s#\^{}##') | sort -u)
+          version=$(printf '%s\n' "$taken" | node scripts/next-version.js)
+          echo "Releasing as $version"
+          npm version "$version" --no-git-tag-version --allow-same-version
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       # --publish never: releases are created by the job below, not electron-builder.
       - name: Build installer and portable .exe
@@ -43,8 +60,8 @@ jobs:
             !dist/builder-effective-config.yaml
           if-no-files-found: error
 
-  # Publishes a release for the version in package.json: on every push to main
-  # (skipped when that version is already released), or when a v* tag is pushed.
+  # Publishes a release on every push to main (as the version picked above), or
+  # when a v* tag is pushed.
   # Versions with a pre-release part (0.2.0-beta.1) become GitHub pre-releases.
   # The .yml and .blockmap files are what the in-app updater reads.
   release:
@@ -68,10 +85,10 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             tag="$GITHUB_REF_NAME"
           else
-            tag="v$(node -p "require('./package.json').version")"
+            tag="v${{ needs.windows.outputs.version }}"
           fi
           if gh release view "$tag" >/dev/null 2>&1; then
-            echo "Release $tag already exists. Bump the version in package.json to publish a new one."
+            echo "Release $tag already exists."
             exit 0
           fi
           # Beta installs read beta.yml first; stable installs read latest.yml.
