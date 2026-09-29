@@ -51,6 +51,7 @@ const DEFAULT_SETTINGS = {
     translate: { enabled: true, promptOnPaste: true, useAi: true, hotkey: 'alt+t', sensitivity: 'medium' },
     usage: { enabled: true, showInStatus: true, dailyRequests: 0, dailyTokens: 0 },
   },
+  updates: { auto: true },
 };
 
 const GUARD_CATEGORIES = ['files', 'git', 'disk', 'database', 'system', 'cloud', 'remote'];
@@ -246,6 +247,7 @@ function getSettings() {
         openrouter: { ...DEFAULT_SETTINGS.ai.openrouter, ...(ai.openrouter || {}) },
       },
       tools: mergeSavedTools(saved.tools || {}),
+      updates: { ...DEFAULT_SETTINGS.updates, ...(saved.updates || {}) },
     };
   }
   return settings;
@@ -263,6 +265,7 @@ function updateSettings(patch) {
     if (typeof patch.psreadlineImported === 'boolean') next.psreadlineImported = patch.psreadlineImported;
     if (typeof patch.bashImported === 'boolean') next.bashImported = patch.bashImported;
     if (typeof patch.rightClick === 'boolean') next.rightClick = patch.rightClick;
+    if (patch.updates && typeof patch.updates.auto === 'boolean') next.updates = { ...current.updates, auto: patch.updates.auto };
     const ai = patch.ai || {};
     if (typeof ai.enabled === 'boolean') next.ai.enabled = ai.enabled;
     if (typeof ai.sendContext === 'boolean') next.ai.sendContext = ai.sendContext;

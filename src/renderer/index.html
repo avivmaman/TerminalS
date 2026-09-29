@@ -10,6 +10,7 @@
 <body data-theme="terminals">
   <header id="titlebar">
     <img class="app-logo" src="../../assets/icon.svg" alt="TerminalS" title="TerminalS">
+    <span id="beta-badge" class="beta-badge" title="Beta: expect rough edges" hidden>Beta</span>
     <div id="tabs"></div>
     <button id="new-tab" class="tb-btn" title="New tab (Ctrl+Shift+T)">+</button>
     <button id="shell-menu-btn" class="tb-btn" title="Choose shell">&#9662;</button>
@@ -50,6 +51,7 @@
     <span id="status-hint"></span>
     <span id="status-usage" class="pill usage" hidden></span>
     <span id="status-ai" class="pill"></span>
+    <button id="status-update" class="pill update" hidden></button>
     <button id="btn-history" class="sb-btn" title="Ctrl+Shift+H">History</button>
     <button id="btn-profiles" class="sb-btn" title="Ctrl+Shift+E">Environment</button>
     <button id="btn-settings" class="sb-btn" title="Ctrl+,">Settings</button>
@@ -84,6 +86,17 @@
           <select id="set-shell"></select>
           <label for="set-rclick">Right-click</label>
           <label class="check"><input id="set-rclick" type="checkbox"> Copy the selection, or paste when nothing is selected</label>
+        </div>
+        <h3>Updates</h3>
+        <div class="grid">
+          <label for="set-update-auto">Automatic</label>
+          <label class="check"><input id="set-update-auto" type="checkbox"> Check GitHub for new releases at start-up and every few hours</label>
+          <span></span>
+          <div class="row inline">
+            <button id="update-check">Check now</button>
+            <button id="update-install" class="primary" hidden>Restart and update</button>
+            <span id="update-status" class="hint"></span>
+          </div>
         </div>
       </section>
 

@@ -9,6 +9,7 @@ const ai = require('./ai');
 const guard = require('./guard');
 const translate = require('./translate');
 const usage = require('./usage');
+const updater = require('./updater');
 
 // Plain string argument from the renderer, bounded in length.
 function text(v, max = 4000) {
@@ -115,6 +116,7 @@ function registerIpc() {
   handle('settings:get', () => withStatus(store.getSettings()));
   handle('settings:set', (patch) => {
     const next = store.updateSettings(patch);
+    if (patch && patch.updates) updater.schedule();
     if (win && patch && patch.theme) win.setTitleBarOverlay({ ...THEME_CHROME[next.theme], height: 38 });
     return withStatus(next);
   });
@@ -159,6 +161,10 @@ function registerIpc() {
   handle('profiles:moveEnv', (id, delta) => store.moveEnvVar(String(id), Number(delta)));
   handle('profiles:saveScript', (kind, text) => store.saveScript(String(kind), text));
 
+  handle('updates:state', () => updater.getState());
+  handle('updates:check', () => updater.check());
+  handle('updates:install', () => updater.install());
+
   handle('app:openExternal', (url) => {
     let parsed;
     try {
@@ -191,6 +197,7 @@ app.whenReady().then(() => {
   }
 
   createWindow();
+  updater.init((state) => send('updates:state', state));
 });
 
 app.on('before-quit', () => {
