@@ -29,6 +29,9 @@ jobs:
       - name: Build installer and portable .exe
         run: npm run dist -- --publish never
 
+      - name: List build output
+        run: Get-ChildItem dist -File | Format-Table Name, Length -AutoSize
+
       - uses: actions/upload-artifact@v4
         with:
           name: TerminalS-windows
