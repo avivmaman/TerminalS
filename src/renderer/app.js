@@ -270,6 +270,7 @@ const PROVIDER_LABELS = {
   anthropic: 'Claude',
   'foundry-claude': 'Claude on Foundry',
   'azure-openai': 'Azure OpenAI',
+  openrouter: 'OpenRouter',
 };
 
 function aiConfigured() {
@@ -278,6 +279,7 @@ function aiConfigured() {
   const env = state.settings.envDefaults || {};
   if (ai.provider === 'foundry-claude') return Boolean(ai['foundry-claude'].resource || env['foundry-claude']);
   if (ai.provider === 'azure-openai') return Boolean((ai['azure-openai'].endpoint || env['azure-openai']) && ai['azure-openai'].deployment);
+  if (ai.provider === 'openrouter') return Boolean(ai.openrouter.model);
   return true;
 }
 
@@ -1587,12 +1589,14 @@ const KEY_ENV = {
   anthropic: 'ANTHROPIC_API_KEY',
   'foundry-claude': 'ANTHROPIC_FOUNDRY_API_KEY',
   'azure-openai': 'AZURE_OPENAI_API_KEY',
+  openrouter: 'OPENROUTER_API_KEY',
 };
 
 const KEY_PLACEHOLDER = {
   anthropic: 'sk-ant-…',
   'foundry-claude': 'Foundry resource key',
   'azure-openai': 'Azure OpenAI resource key',
+  openrouter: 'sk-or-…',
 };
 
 function keyStatusText(provider, status) {
@@ -1602,7 +1606,7 @@ function keyStatusText(provider, status) {
   else if (status === 'env') text = `Using ${env} from your environment.`;
   else if (status === 'env-mismatch') text = `${env} is set, but it's only used with the endpoint from your environment. Clear the endpoint field to use it, or save a key for this endpoint.`;
   else text = `No key found. Paste one above, or set $env:${env} for your session.`;
-  if (provider !== 'anthropic') {
+  if (provider === 'foundry-claude' || provider === 'azure-openai') {
     text += ' If your organisation discourages long-lived resource keys, use Entra ID sign-in instead.';
   }
   return text;
@@ -1616,14 +1620,16 @@ function renderProviderFields() {
   for (const g of document.querySelectorAll('.provider-grid')) g.hidden = g.dataset.provider !== provider;
   const fc = s.ai['foundry-claude'];
   const ao = s.ai['azure-openai'];
+  const or = s.ai.openrouter;
   for (const [id, value] of [['set-fc-resource', fc.resource], ['set-fc-model', fc.model], ['set-fc-auth', fc.auth],
-    ['set-ao-endpoint', ao.endpoint], ['set-ao-deployment', ao.deployment], ['set-ao-version', ao.apiVersion], ['set-ao-auth', ao.auth]]) {
+    ['set-ao-endpoint', ao.endpoint], ['set-ao-deployment', ao.deployment], ['set-ao-version', ao.apiVersion], ['set-ao-auth', ao.auth],
+    ['set-or-model', or.model]]) {
     if (document.activeElement !== $(id)) $(id).value = value;
   }
   const env = s.envDefaults || {};
   $('set-fc-resource').placeholder = env['foundry-claude'] ? `from ANTHROPIC_FOUNDRY_BASE_URL: ${env['foundry-claude']}` : 'my-resource   or   https://my-resource.services.ai.azure.com/anthropic/';
   $('set-ao-endpoint').placeholder = env['azure-openai'] ? `from AZURE_OPENAI_ENDPOINT: ${env['azure-openai']}` : 'https://my-resource.openai.azure.com/';
-  const usesEntra = provider !== 'anthropic' && s.ai[provider].auth === 'entra';
+  const usesEntra = Boolean(s.ai[provider] && s.ai[provider].auth === 'entra');
   $('key-grid').hidden = usesEntra;
   $('set-key').placeholder = KEY_PLACEHOLDER[provider];
   $('set-key-status').textContent = keyStatusText(provider, s.keys[provider]);
@@ -1799,7 +1805,7 @@ function wireSettings() {
       const res = await api.ai.test();
       if (res.status === 'ok') out.textContent = `Connected in ${res.ms} ms${res.suggestion ? ` — suggested “${res.suggestion}”` : ' (no suggestion returned)'}.`;
       else if (res.status === 'no-key') out.textContent = 'No API key for this provider yet.';
-      else if (res.status === 'not-configured') out.textContent = 'Fill in the endpoint/resource and deployment first.';
+      else if (res.status === 'not-configured') out.textContent = 'Fill in the endpoint/resource and deployment (or model) first.';
       else if (res.status === 'key-endpoint-mismatch') out.textContent = 'The environment key only works with the environment endpoint. Clear the endpoint field or save a key.';
       else out.textContent = res.error || `Failed (${res.status}).`;
     } finally {

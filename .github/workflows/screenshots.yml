@@ -1,0 +1,59 @@
+name: Screenshots
+
+# Regenerates the README screenshots on a Windows runner and commits them to
+# the branch that triggered the run. Run it from the Actions tab, or push a
+# change to the screenshot script. Add an OPENROUTER_API_KEY repository secret
+# to also capture the AI suggestion picker.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/screenshots.js
+      - .github/workflows/screenshots.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm i --no-save playwright-core
+
+      - name: Capture
+        run: node scripts/screenshots.js
+        env:
+          CI: '1'
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: docs/screenshots/*.png
+
+      - name: Commit screenshots
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          if git diff --cached --quiet; then
+            echo "Screenshots unchanged."
+          else
+            git commit -m "Update README screenshots [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

@@ -14,7 +14,11 @@ const KEYS = {
   anthropic: { secret: 'anthropic-api-key', env: ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN'] },
   'foundry-claude': { secret: 'foundry-api-key', env: ['ANTHROPIC_FOUNDRY_API_KEY'] },
   'azure-openai': { secret: 'azure-openai-api-key', env: ['AZURE_OPENAI_API_KEY'] },
+  openrouter: { secret: 'openrouter-api-key', env: ['OPENROUTER_API_KEY'] },
 };
+
+// OpenRouter has one fixed, OpenAI-compatible endpoint.
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 
 // Entra ID token scopes per Azure service.
 const ENTRA_SCOPES = {
@@ -68,6 +72,7 @@ function effectiveEndpoint(provider, cfg) {
     return cfg.resource.startsWith('https://') ? cfg.resource : `https://${cfg.resource}.services.ai.azure.com/anthropic/`;
   }
   if (provider === 'azure-openai') return cfg.endpoint || envEndpoint(provider);
+  if (provider === 'openrouter') return OPENROUTER_URL;
   return null;
 }
 
@@ -103,7 +108,7 @@ function apiKeyFor(provider) {
 // What the status bar shows: can this provider authenticate at all?
 function credentialStatus(ai) {
   const cfg = ai[ai.provider] || {};
-  if (ai.provider !== 'anthropic' && cfg.auth === 'entra') return 'entra';
+  if (cfg.auth === 'entra') return 'entra';
   const status = keyStatus(ai.provider, cfg);
   return status === 'env-mismatch' ? 'missing' : status;
 }
@@ -142,10 +147,11 @@ function entraTokenProvider(provider) {
 function getClient(ai) {
   const provider = ai.provider;
   const cfg = ai[provider] || {};
-  const useEntra = provider !== 'anthropic' && cfg.auth === 'entra';
+  const useEntra = cfg.auth === 'entra';
   const endpoint = effectiveEndpoint(provider, cfg);
   if (provider !== 'anthropic' && !endpoint) return { status: 'not-configured' };
   if (provider === 'azure-openai' && !cfg.deployment) return { status: 'not-configured' };
+  if (provider === 'openrouter' && !cfg.model) return { status: 'not-configured' };
   const status = keyStatus(provider, cfg);
   if (!useEntra && status === 'env-mismatch') return { status: 'key-endpoint-mismatch' };
   if (!useEntra && status === 'missing') return { status: 'no-key' };
@@ -179,6 +185,15 @@ function getClient(ai) {
       apiVersion: cfg.apiVersion,
       apiKey: useEntra ? null : apiKeyFor(provider),
       azureADTokenProvider: useEntra ? entraTokenProvider(provider) : undefined,
+    });
+  } else if (provider === 'openrouter') {
+    const OpenAI = require('openai').default;
+    client = new OpenAI({
+      ...common,
+      baseURL: OPENROUTER_URL,
+      apiKey: apiKeyFor(provider),
+      // Optional app attribution headers OpenRouter reads.
+      defaultHeaders: { 'HTTP-Referer': 'https://github.com/avivmaman/TerminalS', 'X-Title': 'TerminalS' },
     });
   } else {
     return { status: 'not-configured' };
@@ -270,10 +285,11 @@ async function callClaude(client, model, system, context, options, { fallbacks }
   return { text, usage: response.usage, model: response.model || model };
 }
 
-async function callAzureOpenAI(client, deployment, system, context, options) {
+// Chat Completions: Azure OpenAI and OpenAI-compatible endpoints such as OpenRouter.
+async function callChatCompletions(client, model, system, context, options, { maxTokensParam }) {
   const response = await client.chat.completions.create({
-    model: deployment,
-    max_completion_tokens: 4096,
+    model,
+    [maxTokensParam]: 4096,
     messages: [
       { role: 'system', content: system },
       { role: 'user', content: JSON.stringify(context) },
@@ -281,7 +297,7 @@ async function callAzureOpenAI(client, deployment, system, context, options) {
   }, options);
   const choice = response.choices && response.choices[0];
   const ok = choice && choice.finish_reason !== 'content_filter' && choice.message && typeof choice.message.content === 'string';
-  return { text: ok ? choice.message.content : '', usage: response.usage, model: deployment };
+  return { text: ok ? choice.message.content : '', usage: response.usage, model: response.model || model };
 }
 
 function describeError(err) {
@@ -307,6 +323,7 @@ function isAbort(err, controller) {
 function modelFor(ai) {
   if (ai.provider === 'anthropic') return ai.model;
   if (ai.provider === 'foundry-claude') return ai['foundry-claude'].model;
+  if (ai.provider === 'openrouter') return ai.openrouter.model;
   return ai['azure-openai'].deployment;
 }
 
@@ -321,7 +338,8 @@ async function runPrompt(ai, type, system, context, controller) {
     let result;
     if (ai.provider === 'anthropic') result = await callClaude(client, ai.model, system, context, options, { fallbacks: true });
     else if (ai.provider === 'foundry-claude') result = await callClaude(client, ai['foundry-claude'].model, system, context, options, { fallbacks: false });
-    else result = await callAzureOpenAI(client, ai['azure-openai'].deployment, system, context, options);
+    else if (ai.provider === 'openrouter') result = await callChatCompletions(client, ai.openrouter.model, system, context, options, { maxTokensParam: 'max_tokens' });
+    else result = await callChatCompletions(client, ai['azure-openai'].deployment, system, context, options, { maxTokensParam: 'max_completion_tokens' });
     if (meter) usage.record({ type, provider: ai.provider, model: modelFor(ai), usage: result.usage });
     // Fix and translate rows always replace the whole line, like "#" requests.
     const parseInput = type === 'suggest' || type === 'test' ? context.input : '#';
