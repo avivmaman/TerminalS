@@ -1,11 +1,11 @@
 {
   "name": "terminals",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.2",
   "description": "A Windows terminal with searchable command history, inline suggestions, a safety guard and optional AI help",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
-    "check": "node --check src/main/main.js && node --check src/main/updater.js && node --check src/main/winenv.js && node --check src/main/pty.js && node --check src/preload.js && node --check src/renderer/app.js && node test/redact.test.js && node test/suggestions.test.js && node test/guard.test.js && node test/translate.test.js && node test/winenv.test.js",
+    "check": "node --check src/main/main.js && node --check src/main/updater.js && node --check src/main/winenv.js && node --check src/main/pty.js && node --check src/preload.js && node --check src/renderer/app.js && node test/redact.test.js && node test/suggestions.test.js && node test/guard.test.js && node test/translate.test.js && node test/winenv.test.js && node test/version.test.js",
     "icons": "electron scripts/build-icons.js",
     "dist": "electron-builder --win nsis portable",
     "dist:dir": "electron-builder --win --dir"

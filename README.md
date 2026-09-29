@@ -178,13 +178,13 @@ Builds use electron-builder (config under `"build"` in `package.json`). node-pty
 
 The [Build workflow](.github/workflows/build.yml) runs `npm run check` and builds both executables on every push and pull request.
 
-Every push to `main` also publishes a GitHub release named after the version in `package.json`, with the executables and the update files (`*.yml`, `*.blockmap`) the in-app updater reads. Versions with a pre-release part, such as `0.2.0-beta.1`, are published as **pre-releases** titled "(Beta)". If that version is already released, the step is skipped, so bump the version to ship a new one:
+Every push to `main` also publishes a GitHub release with the executables and the update files (`*.yml`, `*.blockmap`) the in-app updater reads, so every merge reaches installed copies as an update. The version is the one in `package.json`, or the next free one if that is already released (`0.2.0-beta.2` taken → `0.2.0-beta.3`), so you don't have to bump it for each merge. Versions with a pre-release part are published as **pre-releases** titled "(Beta)".
+
+To start a new line of versions, change `package.json` yourself:
 
 ```powershell
-npm version prerelease --preid beta --no-git-tag-version   # 0.2.0-beta.1 -> 0.2.0-beta.2
-npm version minor --no-git-tag-version                     # 0.2.0-beta.2 -> 0.2.0 (first stable)
-git commit -am "Release 0.2.0-beta.2"
-git push
+npm version minor --no-git-tag-version   # 0.2.0-beta.N -> 0.2.0 (first stable)
+npm version preminor --preid beta --no-git-tag-version   # 0.2.0 -> 0.3.0-beta.0
 ```
 
 Pushing a `v*` tag publishes a release for that tag as well.
