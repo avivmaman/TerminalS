@@ -52,7 +52,6 @@
       "owner": "avivmaman",
       "repo": "TerminalS"
     },
-    "generateUpdatesFilesForAllChannels": true,
     "win": {
       "icon": "assets/icon.ico",
       "target": [

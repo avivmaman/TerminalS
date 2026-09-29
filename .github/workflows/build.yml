@@ -74,6 +74,9 @@ jobs:
             echo "Release $tag already exists. Bump the version in package.json to publish a new one."
             exit 0
           fi
+          # Beta installs read beta.yml first; stable installs read latest.yml.
+          # Both describe the same installer, so beta users get stable releases too.
+          [ -f dist/beta.yml ] || cp dist/latest.yml dist/beta.yml
           flags=()
           title="TerminalS $tag"
           if [[ "$tag" == *-* ]]; then
