@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { parseRegExport, mergeEnv } = require('../src/main/winenv');
+const { parseRegExport, mergeEnv, freshEnv } = require('../src/main/winenv');
 
 // REG_EXPAND_SZ values are exported as UTF-16LE bytes, wrapped over several lines.
 function hex2(s) {
@@ -55,4 +55,19 @@ assert.equal(mergeEnv({}, [{ name: 'X', value: '%NOPE%\\a', expand: true }], [])
 // No user PATH: machine PATH only.
 assert.equal(mergeEnv({ Path: 'old' }, [{ name: 'Path', value: 'm', expand: false }], []).Path, 'm');
 
-console.log('winenv: all cases passed');
+// On Windows, read the real registry: PATH must come back with System32 in it.
+async function live() {
+  if (process.platform !== 'win32') return 'skipped live registry read (not Windows)';
+  const env = await freshEnv({ KEEP: '1' });
+  const pathKey = Object.keys(env).find((k) => k.toLowerCase() === 'path');
+  assert.ok(pathKey, 'PATH read from the registry');
+  assert.match(env[pathKey], /system32/i);
+  assert.doesNotMatch(env[pathKey], /%SystemRoot%/i);
+  assert.equal(env.KEEP, '1');
+  return 'live registry read ok';
+}
+
+live().then((note) => console.log(`winenv: all cases passed (${note})`), (err) => {
+  console.error(err);
+  process.exit(1);
+});
