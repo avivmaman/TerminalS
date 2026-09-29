@@ -59,17 +59,38 @@ function seed() {
   const pins = ['npm run dev', 'docker compose up -d', 'git pull --rebase'].map((command, i) => ({
     id: `pdemo${i}`, command, shell: 'pwsh', cwd: DEMO, ts: now,
   }));
-  const settings = { psreadlineImported: true, bashImported: true, defaultShell: 'pwsh' };
-  if (process.env.OPENROUTER_API_KEY) settings.ai = { provider: 'openrouter', openrouter: { model: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-5' } };
+  const settings = {
+    psreadlineImported: true, bashImported: true, defaultShell: 'pwsh',
+    ai: { provider: 'openrouter', openrouter: { model: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-5' } },
+  };
+  const profiles = {
+    env: [
+      { id: 'vdemo1', name: 'NODE_ENV', mode: 'set', scope: 'all', value: 'development', secret: false, enabled: true },
+      { id: 'vdemo2', name: 'PATH', mode: 'prepend', scope: 'all', value: 'C:\\tools\\bin', secret: false, enabled: true },
+      { id: 'vdemo3', name: 'DOCKER_BUILDKIT', mode: 'set', scope: 'pwsh', value: '1', secret: false, enabled: true },
+    ],
+    scripts: { powershell: 'Set-Alias k kubectl\n', cmd: '', bash: '' },
+  };
   fs.writeFileSync(path.join(DATA, 'history.json'), JSON.stringify(history));
   fs.writeFileSync(path.join(DATA, 'pins.json'), JSON.stringify(pins));
   fs.writeFileSync(path.join(DATA, 'settings.json'), JSON.stringify(settings));
+  fs.writeFileSync(path.join(DATA, 'profiles.json'), JSON.stringify(profiles));
 }
 
 async function main() {
   seed();
   fs.mkdirSync(OUT, { recursive: true });
-  const app = await electron.launch({ args: [ROOT], cwd: ROOT });
+  const app = await electron.launch({
+    args: [ROOT],
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      // New tabs open in the home folder, so this starts them in the demo project.
+      USERPROFILE: DEMO,
+      // Without a real key, a placeholder shows the configured state (no request is made).
+      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || 'sk-or-v1-screenshot-placeholder-0000000000',
+    },
+  });
   const page = await app.firstWindow();
   await page.waitForSelector('#terminals .xterm', { timeout: 30000 });
   await sleep(4000); // shell start-up and profile
@@ -93,8 +114,6 @@ async function main() {
   };
 
   await page.click('#terminals');
-  await run(`cd ${DEMO}`);
-  await run('clear', 800);
   await run('git status');
   await run('git log --oneline');
   await run('Get-ChildItem');
